@@ -1,3 +1,3 @@
-== Stibium ==
+# Stibium
 
 Developing...
