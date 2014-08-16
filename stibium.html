@@ -4,11 +4,77 @@
 <meta charset="GBK">
 <script type="text/javascript" src="stibium.js"></script>
 <style>
+body {
+    font-family: sans-serif;
+    font-size: 18px;
+}
 template {
     display: none;
 }
+a {
+    color: #2D64B3;
+    text-decoration: none;
+}
+ul {
+    list-style-type: none;
+}
+div.inline {
+    display: inline-block;
+}
+.item, .post {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+.item_right {
+    float: right;
+}
+.item_count {
+    width: 5ex;
+    display: inline-block;
+}
+.item_date {
+    color: gray;
+}
+.post_floor {
+    color: #F55;
+}
+.post_author {
+    color: #2D64B3;
+}
+.post_date {
+    color: #008000;
+}
+.post_body {
+    padding: 0.8em;
+    padding-left: 2em;
+}
 </style>
+<template id="template_bar">
+  <li class="item">
+    <div class="inline item_left">
+      <div class="item_count"></div>
+    </div>
+    <div class="inline item_center">
+      <a class="item_link"></a>
+    </div>
+    <div class="inline item_right">
+      <div class="inline item_last"></div>
+      <div class="inline item_date"></div>
+    </div>
+  </li>
+</template>
+<template id="template_topic">
+  <li class="post">
+    <div class="post_header">
+      <div class="inline post_floor"></div>
+      <div class="inline post_author"></div>
+      <div class="inline post_date"></div>
+    </div>
+  </li>
+</template>
 </head>
 <body onload="init()">
+<ul id="list">
+</ul>
 </body>
 </html>
