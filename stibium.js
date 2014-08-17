@@ -2,11 +2,16 @@ const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/submit";
-var container, tmpdoc, tmpdata;
+var container, initial, tmpdoc, tmpdata;
 
 
 function $(selector){
     return document.querySelector(selector);
+}
+
+
+function undef(obj){
+    return (typeof obj == "undefined");
 }
 
 
@@ -33,7 +38,16 @@ function getNode(node_id){
 
 function init(){
     container = $("#list");
-//    bar("linux");
+
+    initial = bridge.getInitialData();
+    if(!undef(initial.action) && !undef(initial.argument)){
+	switch(initial.action){
+	    case "kw":
+	    bar(initial.argument);
+	    case "kz":
+	    topic(initial.argument);
+	}
+    }
 }
 
 
@@ -89,7 +103,7 @@ var Handle = {
 	    })();
 	    crt.good = false;
 	    crt.top = false;
-	    if(typeof span != "undefined")
+	    if(!undef(span))
 		for(j=0; j<span.length; j++){
 		    if(span[j].textContent.charCodeAt(0) == 31934)
 			crt.good = true;
