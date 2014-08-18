@@ -73,7 +73,7 @@ function init(){
 	    bar(initial.argument, 1);
 	    break;
 	    case "kz":
-	    topic(initial.argument);
+	    topic(initial.argument, 1);
 	}
     }
 }
@@ -101,10 +101,11 @@ function bar(bar, pn){
 }
 
 
-function topic(kz){
-    GET(TIEBA_KZ_URL+kz, function(x){
+function topic(kz, pn){
+    var URL = TIEBA_KZ_URL+kz+((pn!=1)?"&pnum="+pn:"");
+    GET(URL, function(x){
 	doc_global = x.responseXML;
-	data_global = Handle.topic(x.responseXML);
+	data_global = Handle.topic(x.responseXML, kz);
 	Render.topic(data_global);
     });
     title("Loading");
@@ -112,6 +113,22 @@ function topic(kz){
 
 
 var Handle = {
+    "tools":{
+	"genPageData":function(page_element){
+	    var result = {};
+	    if(page_element){
+		var page_str = page_element.textContent;
+		page_str = substr(page_str, 39029, 31532, true);
+		var page_arr = page_str.split("/");
+		result.current = Number(page_arr[0]);
+		result.total = Number(page_arr[1]);
+	    }else{
+		result.current = 1;
+		result.total = 1;
+	    }
+	    return result;
+	}
+    },
     "bar":function(doc, kw){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
@@ -146,16 +163,7 @@ var Handle = {
 
 	data.page = {};
 	var page_element = doc.querySelector("div.p");
-	if(page_element){
-	    var page_str = page_element.textContent;
-	    page_str = substr(page_str, 39029, 31532, true);
-	    var page_arr = page_str.split("/");
-	    data.page.current = Number(page_arr[0]);
-	    data.page.total = Number(page_arr[1]);
-	}else{
-	    data.page.current = 1;
-	    data.page.total = 1;
-	}
+	data.page = this.tools.genPageData(page_element);
 	
 	var title_element = doc.querySelector("title");
 	if(title_element){
@@ -168,13 +176,25 @@ var Handle = {
 
 	return data;
     },
-    "topic":function(doc){
+    "topic":function(doc, kz){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i;
 	for(i=0; i<items.length; i++){
 	    var crt = {};
 	    var item = items[i];
+
+	    var reply = item.querySelector("a.reply_to");
+	    if(reply){
+		var pid_str = reply.href.replace(/.*pid=/, "").replace(/[^\d].*/, "");
+		crt.pid = Number(pid_str);
+		if(reply.textContent.indexOf(")") != -1){
+		    crt.reply = Number(substr(reply.textContent, 40, 41));
+		}else{
+		    crt.reply = 0;
+		}
+	    }
+
 	    var table = item.querySelector("table");
 
 	    crt.floor = Number(item.textContent.replace(/[^\d].*$/, ""));
@@ -184,25 +204,59 @@ var Handle = {
 
 	    var br = item.querySelectorAll("br");
 	    item.removeChild(br[br.length-1]);
-	    var reply = item.querySelector("a.reply_to");
-	    if(reply)
-		item.removeChild(reply);
-	    /* Note: PID */
 	    
 	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
 	    item.className = "post_body";
 	    crt.content = item;
+	    /* Note: expand content */
 	    /* Note: XSS Safety Settings Needed */
 
 	    data.push(crt);
 	}
+
+	data.page = {};
+	var page_element = doc.querySelector("div.d > form > div.h");
+	data.page = this.tools.genPageData(page_element);
+
 	data.title = doc.querySelector("title").textContent;
+	data.kz = kz;
+
 	return data;
     }
 }
 
 
 var Render = {
+    "tools":{
+	"genPager":function(data_page, type){
+	    var pager_div = getNode("template_pager").children[0];
+	    var prev_btn = pager_div.querySelector(".pager_prev");
+	    var next_btn = pager_div.querySelector(".pager_next");
+	    var tip = pager_div.querySelector(".pager_tip");
+	    if(data_page.current == 1)
+		prev_btn.disabled = true;
+	    if(data_page.current == data_page.total)
+		next_btn.disabled = true;
+	    if(type == "bar"){
+		prev_btn.onclick = function(){
+		    bar(data_global.kw, data_global.page.current-1);
+		}
+		next_btn.onclick = function(){
+		    bar(data_global.kw, data_global.page.current+1);
+		}
+	    }else if(type == "topic"){
+		prev_btn.onclick = function(){
+		    topic(data_global.kz, data_global.page.current-1);
+		}
+		next_btn.onclick = function(){
+		    topic(data_global.kz, data_global.page.current+1);
+		}
+	    }
+	    tip.textContent = data_page.current + "/" + data_page.total;
+	    pager.innerHTML = "";
+	    pager.appendChild(pager_div);
+	}
+    },
     "bar":function(data){
 	container.innerHTML = "";
 	data.reduce(function(prv, crt){
@@ -220,25 +274,7 @@ var Render = {
 	    if(crt.good) item.classList.add("item_good");
 	    container.appendChild(item);
 	}, '');
-	
-	var pager_div = getNode("template_pager").children[0];
-	var prev_btn = pager_div.querySelector(".pager_prev");
-	var next_btn = pager_div.querySelector(".pager_next");
-	var tip = pager_div.querySelector(".pager_tip");
-	if(data.page.current == 1)
-	    prev_btn.disabled = true;
-	if(data.page.current == data.page.total)
-	    next_btn.disabled = true;
-	prev_btn.onclick = function(){
-	    bar(data_global.kw, data_global.page.current-1);
-	}
-	next_btn.onclick = function(){
-	    bar(data_global.kw, data_global.page.current+1);
-	}
-	tip.textContent = data.page.current + "/" + data.page.total;
-	pager.innerHTML = "";
-	pager.appendChild(pager_div);
-
+	this.tools.genPager(data.page, "bar");
 	title(data.title);
     },
     "topic":function(data){
@@ -254,6 +290,7 @@ var Render = {
 	    post.appendChild(crt.content);
 	    container.appendChild(post);
 	}, '');
+	this.tools.genPager(data.page, "topic");
 	title(data.title);
     }
 }
