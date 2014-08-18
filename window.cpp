@@ -5,15 +5,19 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QDebug>
 #include "window.h"
 #include "view.h"
 
 
-Window::Window(QWidget *parent) : QMainWindow(parent){
-	MainView = new QTabWidget(this);
-	MainView -> setTabsClosable(true);
+Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
+	application = app;
 
-	corner = new QWidget(MainView);
+	Tabs = new QTabWidget(this);
+	Tabs -> setTabsClosable(true);
+	Tabs -> setMovable(true);
+
+	corner = new QWidget(Tabs);
 	queryEdit = new QLineEdit(corner);
 	queryEdit -> setPlaceholderText("Query");
 	queryButton = new QPushButton("Go", corner);
@@ -21,9 +25,9 @@ Window::Window(QWidget *parent) : QMainWindow(parent){
 	queryLayout -> addWidget(queryEdit);
 	queryLayout -> addWidget(queryButton);
 	corner -> setLayout(queryLayout);
-	MainView -> setCornerWidget(corner);
+	Tabs -> setCornerWidget(corner);
 
-	setCentralWidget(MainView);
+	setCentralWidget(Tabs);
 	openTab();
 
 	setWindowTitle(tr("Stibium"));
@@ -31,6 +35,8 @@ Window::Window(QWidget *parent) : QMainWindow(parent){
 	QDesktopWidget *desktop = QApplication::desktop();
 	move((desktop->width() - this->width())/2, (desktop->height() - this->height())/2);
 
+	connect(Tabs, SIGNAL(tabCloseRequested(int)),
+		this, SLOT(closeTab(int)) );
 	connect(queryEdit, SIGNAL(returnPressed()),
 		this, SLOT(query()) );
 	connect(queryButton, SIGNAL(clicked()),
@@ -39,16 +45,19 @@ Window::Window(QWidget *parent) : QMainWindow(parent){
 
 
 Window::~Window(){
-
+	qDebug() << "Window destructed";
 }
 
 
 void Window::addTab(View *v){
 	connect(v, SIGNAL(openTab(QString, QString)),
 		this, SLOT(openTab(QString, QString)) );
-	MainView -> addTab(v, "New Tab");
+	connect(v, SIGNAL(titleChangeRequested(QString, View*)),
+		this, SLOT(changeTabTitle(QString, View*)) );
+	v -> Load();
+	Tabs -> addTab(v, "New Tab");
 	views.append(v);
-	MainView -> setCurrentIndex(MainView -> count() - 1);
+	Tabs -> setCurrentIndex(Tabs -> count() - 1);
 }
 
 
@@ -63,6 +72,22 @@ void Window::openTab(QString action, QString argument){
 	View *v;
 	v = new View(this, action, argument);
 	addTab(v);
+}
+
+
+void Window::closeTab(int index){
+	delete Tabs -> widget(index);
+	if(Tabs->count() == 0)
+		application -> exit();
+}
+
+
+void Window::changeTabTitle(QString title, View *addr){
+	for(int i=0; i<Tabs->count(); i++){
+		if(Tabs->widget(i) == addr){
+			Tabs -> setTabText(i, title);
+		}
+	}
 }
 
 

@@ -48,6 +48,13 @@ div.inline {
     padding: 0.8em;
     padding-left: 2em;
 }
+.pager {
+    text-align: center;
+}
+.pager_tip {
+    margin-left: 0.2em;
+    margin-right: 0.2em;
+}
 </style>
 <template id="template_bar">
   <li class="item">
@@ -72,9 +79,18 @@ div.inline {
     </div>
   </li>
 </template>
+<template id="template_pager">
+  <div class="pager">
+    <button class="pager_prev">Prev</button>
+    <div class="inline pager_tip"></div>
+    <button class="pager_next">Next</button>
+  </div>
+</template>
 </head>
 <body onload="init()">
 <ul id="list">
 </ul>
+<div id="pager">
+</div>
 </body>
 </html>

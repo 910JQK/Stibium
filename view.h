@@ -16,11 +16,14 @@ public:
 	View(QWidget *parent, QString action, QString argument);
 	~View();
 	Bridge *bridge;
+	void Load();
 signals:
 	void openTab(QString action, QString argument);
+	void titleChangeRequested(QString title, View *view);
 public slots:
 	void javaScriptWindowObjectCleared();
 	void LinkClicked(const QUrl &url);
+	void changeTitle(QString title);
 protected:
 	void init();
 };
@@ -32,6 +35,8 @@ public:
 	Bridge();
 	~Bridge();
 	QVariantMap initial_data;
+signals:
+	void changeTitle(QString title);
 public slots:
 	void debug(QString msg);
 	QVariantMap getInitialData();

@@ -2,7 +2,7 @@ const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/submit";
-var container, initial, tmpdoc, tmpdata;
+var container, initial, doc_global, data_global;
 
 
 function $(selector){
@@ -36,14 +36,42 @@ function getNode(node_id){
 }
 
 
+function title(val){
+    bridge.changeTitle(val);
+}
+
+
+function substr(str, start_code, end_code, reversed){
+    var I, i, start, end;
+    for(I=0; I<str.length; I++){
+	if(reversed)
+	    i = str.length-I-1;
+	else
+	    i = I;
+	if(str.charCodeAt(i) == end_code && undef(end))
+	    end = i;
+	if(str.charCodeAt(i) == start_code && undef(end))
+	    start = i;
+    }
+    if(reversed){
+	var tmp = start;
+	start = end;
+	end = tmp;
+    }
+    return str.slice(start+1, end);
+}
+
+
 function init(){
     container = $("#list");
+    pager = $("#pager");
 
     initial = bridge.getInitialData();
     if(!undef(initial.action) && !undef(initial.argument)){
 	switch(initial.action){
 	    case "kw":
-	    bar(initial.argument);
+	    bar(initial.argument, 1);
+	    break;
 	    case "kz":
 	    topic(initial.argument);
 	}
@@ -62,26 +90,29 @@ function GET(url, reaction){
 }
 
 
-function bar(bar){
-    GET(TIEBA_KW_URL+bar, function(x){
-	tmpdoc = x.responseXML;
-	tmpdata = Handle.bar(x.responseXML);
-	Render.bar(tmpdata);
+function bar(bar, pn){
+    var URL = TIEBA_KW_URL+bar+((pn!=1)?"&pnum="+pn:"");
+    GET(URL, function(x){
+	doc_global = x.responseXML;
+	data_global = Handle.bar(x.responseXML, bar);
+	Render.bar(data_global);
     });
+    title("Loading");
 }
 
 
 function topic(kz){
     GET(TIEBA_KZ_URL+kz, function(x){
-	tmpdoc = x.responseXML;
-	tmpdata = Handle.topic(x.responseXML);
-	Render.topic(tmpdata);
+	doc_global = x.responseXML;
+	data_global = Handle.topic(x.responseXML);
+	Render.topic(data_global);
     });
+    title("Loading");
 }
 
 
 var Handle = {
-    "bar":function(doc){
+    "bar":function(doc, kw){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i, j;
@@ -112,6 +143,29 @@ var Handle = {
 		}
 	    data.push(crt);
 	}
+
+	data.page = {};
+	var page_element = doc.querySelector("div.p");
+	if(page_element){
+	    var page_str = page_element.textContent;
+	    page_str = substr(page_str, 39029, 31532, true);
+	    var page_arr = page_str.split("/");
+	    data.page.current = Number(page_arr[0]);
+	    data.page.total = Number(page_arr[1]);
+	}else{
+	    data.page.current = 1;
+	    data.page.total = 1;
+	}
+	
+	var title_element = doc.querySelector("title");
+	if(title_element){
+	    var tl_txt = title_element.textContent;
+	    data.title = tl_txt.replace(/-[^-]*$/, "").replace(/^[^-]*-/, "");
+	}else{
+	    title = "";
+	}
+	data.kw = kw;
+
 	return data;
     },
     "topic":function(doc){
@@ -138,9 +192,11 @@ var Handle = {
 	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
 	    item.className = "post_body";
 	    crt.content = item;
+	    /* Note: XSS Safety Settings Needed */
 
 	    data.push(crt);
 	}
+	data.title = doc.querySelector("title").textContent;
 	return data;
     }
 }
@@ -164,6 +220,26 @@ var Render = {
 	    if(crt.good) item.classList.add("item_good");
 	    container.appendChild(item);
 	}, '');
+	
+	var pager_div = getNode("template_pager").children[0];
+	var prev_btn = pager_div.querySelector(".pager_prev");
+	var next_btn = pager_div.querySelector(".pager_next");
+	var tip = pager_div.querySelector(".pager_tip");
+	if(data.page.current == 1)
+	    prev_btn.disabled = true;
+	if(data.page.current == data.page.total)
+	    next_btn.disabled = true;
+	prev_btn.onclick = function(){
+	    bar(data_global.kw, data_global.page.current-1);
+	}
+	next_btn.onclick = function(){
+	    bar(data_global.kw, data_global.page.current+1);
+	}
+	tip.textContent = data.page.current + "/" + data.page.total;
+	pager.innerHTML = "";
+	pager.appendChild(pager_div);
+
+	title(data.title);
     },
     "topic":function(data){
 	container.innerHTML = "";
@@ -178,5 +254,6 @@ var Render = {
 	    post.appendChild(crt.content);
 	    container.appendChild(post);
 	}, '');
+	title(data.title);
     }
 }
