@@ -38,7 +38,7 @@ div.inline {
 .post_floor {
     color: #F55;
 }
-.post_author {
+.post_author, .subpost_header {
     color: #2D64B3;
 }
 .post_date {
@@ -47,6 +47,10 @@ div.inline {
 .post_body {
     padding: 0.8em;
     padding-left: 2em;
+}
+.subpost_header::after {
+    content: ":";
+    color: black;
 }
 .pager {
     text-align: center;

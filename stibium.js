@@ -198,6 +198,14 @@ var Handle = {
 		}
 	    }
 
+	    var img = item.querySelectorAll(".BDE_Image");
+	    for(j=0; j<img.length; j++){
+		var src = img[j].src;
+		src = src.replace(/quality=\d+/, "quality=100");
+		src = src.replace(/size=b\d+_\d+/, "size=b2000_2000");
+		img[j].src = src;
+	    }
+
 	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
 	    item.className = "post_body";
 	    crt.content = item;
@@ -423,7 +431,7 @@ var Render = {
 	    var subpost = getNode("template_subpost").children[0];
 	    var header = subpost.querySelector(".subpost_header");
 	    var body = subpost.querySelector(".subpost_body");
-	    header.textContent = crt.author+":";
+	    header.textContent = crt.author;
 	    header.title = crt.date;
 	    body.innerHTML = crt.content.innerHTML;
 	    list.appendChild(subpost);
