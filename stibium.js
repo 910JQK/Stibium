@@ -1,8 +1,11 @@
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
-const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr";
+const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/submit";
-var container, initial, doc_global, data_global;
+const TIEBA_EXPANED = "&global=1&expand=";
+const TIEBA_PNUM = "&pnum=";
+const TIEBA_PID = "&pid=";
+var container, initial, doc_global, data_global, kw_global, kz_global, pn_global;
 
 
 function $(selector){
@@ -62,6 +65,17 @@ function substr(str, start_code, end_code, reversed){
 }
 
 
+function find(obj_arr, key, val){
+    var i;
+    for(i=0; i<obj_arr.length; i++){
+	if(obj_arr[i][key] == val){
+	    return obj_arr[i];
+	}
+    }
+    return {};
+}
+
+
 function init(){
     container = $("#list");
     pager = $("#pager");
@@ -91,10 +105,12 @@ function GET(url, reaction){
 
 
 function bar(bar, pn){
-    var URL = TIEBA_KW_URL+bar+((pn!=1)?"&pnum="+pn:"");
+    var URL = TIEBA_KW_URL+bar+((pn!=1)?TIEBA_PNUM+pn:"");
+    kw_global = bar;
+    pn_global = pn;
     GET(URL, function(x){
 	doc_global = x.responseXML;
-	data_global = Handle.bar(x.responseXML, bar);
+	data_global = Handle.bar(x.responseXML);
 	Render.bar(data_global);
     });
     title("Loading");
@@ -102,13 +118,24 @@ function bar(bar, pn){
 
 
 function topic(kz, pn){
-    var URL = TIEBA_KZ_URL+kz+((pn!=1)?"&pnum="+pn:"");
+    var URL = TIEBA_KZ_URL+kz+((pn!=1)?TIEBA_PNUM+pn:"");
+    kz_global = kz;
+    pn_global = pn;
     GET(URL, function(x){
 	doc_global = x.responseXML;
-	data_global = Handle.topic(x.responseXML, kz);
+	data_global = Handle.topic(x.responseXML);
 	Render.topic(data_global);
     });
     title("Loading");
+}
+
+
+function subPost(floor, pn){
+    var pid = find(data_global, "floor", floor).pid;
+    var URL = TIEBA_FL_URL + kz_global + TIEBA_PID + pid + TIEBA_PNUM + pn;
+    GET(URL, function(x){
+	Render.subPost(Handle.subPost(x.responseXML, floor));
+    })
 }
 
 
@@ -127,9 +154,59 @@ var Handle = {
 		result.total = 1;
 	    }
 	    return result;
+	},
+	"genPostData":function(item){
+	    var crt = {};
+
+	    var reply = item.querySelector("a.reply_to");
+	    if(reply){
+		var pid_str = reply.href.replace(/.*pid=/, "").replace(/[^\d].*/, "");
+		crt.pid = Number(pid_str);
+		if(reply.textContent.indexOf(")") != -1){
+		    crt.reply = Number(substr(reply.textContent, 40, 41));
+		}else{
+		    crt.reply = 0;
+		}
+	    }
+
+	    var table = item.querySelector("table");
+
+	    crt.floor = Number(item.textContent.replace(/[^\d].*$/, ""));
+	    crt.author = table.querySelector("span.g").children[0].textContent;
+	    crt.date = table.querySelector("span.b").textContent;
+	    item.removeChild(table);
+
+	    var br = item.querySelectorAll("br");
+	    item.removeChild(br[br.length-1]);
+
+	    var a = item.querySelectorAll("a")
+	    var j;
+	    for(j=0; j<a.length; j++){
+		if(a[j].href.match(/expand=[\d]+$/) && (function(a){
+		    return (a.textContent.charCodeAt(2) == 27573 ||
+			    a.textContent.charCodeAt(0) == 20313)
+		})(a[j])){
+		    if(!crt.expand_button){
+			var expand_button = document.createElement("button");
+			expand_button.textContent = "Expand";
+			expand_button.dataset.floor = crt.floor;
+			expand_button.className = "expand_button";
+			crt.expand_button = expand_button;
+			item.appendChild(expand_button);
+		    }
+		    item.removeChild(a[j]);
+		}
+	    }
+
+	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
+	    item.className = "post_body";
+	    crt.content = item;
+	    /* Note: XSS Safety Settings Needed */
+
+	    return crt;
 	}
     },
-    "bar":function(doc, kw){
+    "bar":function(doc){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i, j;
@@ -172,46 +249,15 @@ var Handle = {
 	}else{
 	    title = "";
 	}
-	data.kw = kw;
 
 	return data;
     },
-    "topic":function(doc, kz){
+    "topic":function(doc){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i;
 	for(i=0; i<items.length; i++){
-	    var crt = {};
-	    var item = items[i];
-
-	    var reply = item.querySelector("a.reply_to");
-	    if(reply){
-		var pid_str = reply.href.replace(/.*pid=/, "").replace(/[^\d].*/, "");
-		crt.pid = Number(pid_str);
-		if(reply.textContent.indexOf(")") != -1){
-		    crt.reply = Number(substr(reply.textContent, 40, 41));
-		}else{
-		    crt.reply = 0;
-		}
-	    }
-
-	    var table = item.querySelector("table");
-
-	    crt.floor = Number(item.textContent.replace(/[^\d].*$/, ""));
-	    crt.author = table.querySelector("span.g").children[0].textContent;
-	    crt.date = table.querySelector("span.b").textContent;
-	    item.removeChild(table);
-
-	    var br = item.querySelectorAll("br");
-	    item.removeChild(br[br.length-1]);
-	    
-	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
-	    item.className = "post_body";
-	    crt.content = item;
-	    /* Note: expand content */
-	    /* Note: XSS Safety Settings Needed */
-
-	    data.push(crt);
+	    data.push(this.tools.genPostData(items[i]));
 	}
 
 	data.page = {};
@@ -219,8 +265,32 @@ var Handle = {
 	data.page = this.tools.genPageData(page_element);
 
 	data.title = doc.querySelector("title").textContent;
-	data.kz = kz;
 
+	return data;
+    },
+    "subPost":function(doc, floor){
+	var data = [];
+	var items = doc.querySelectorAll("div.i");
+	var i;
+	for(i=0; i<items.length; i++){
+	    var crt = {};
+	    var item = items[i];
+	    function remove(){
+		return item.removeChild(item.children[item.children.length-1]);
+	    }
+	    remove();
+	    crt.date = remove().textContent;
+	    crt.author = remove().textContent;
+	    crt.content = item;
+	    data.push(crt);
+	}
+	
+	data.page = {};
+	var page_element = doc.querySelector("form > div.h");
+	data.page = this.tools.genPageData(page_element);
+	
+	data.floor = floor;
+	
 	return data;
     }
 }
@@ -239,22 +309,60 @@ var Render = {
 		next_btn.disabled = true;
 	    if(type == "bar"){
 		prev_btn.onclick = function(){
-		    bar(data_global.kw, data_global.page.current-1);
+		    bar(kw_global, data_global.page.current-1);
 		}
 		next_btn.onclick = function(){
-		    bar(data_global.kw, data_global.page.current+1);
+		    bar(kw_global, data_global.page.current+1);
 		}
 	    }else if(type == "topic"){
 		prev_btn.onclick = function(){
-		    topic(data_global.kz, data_global.page.current-1);
+		    topic(kz_global, data_global.page.current-1);
 		}
 		next_btn.onclick = function(){
-		    topic(data_global.kz, data_global.page.current+1);
+		    topic(kz_global, data_global.page.current+1);
 		}
+	    }else if(type == "subpost"){
+		pager_div.dataset.floor = data_page.floor;
+		pager_div.dataset.pn = data_page.current;
 	    }
 	    tip.textContent = data_page.current + "/" + data_page.total;
-	    pager.innerHTML = "";
-	    pager.appendChild(pager_div);
+	    return pager_div;
+	},
+	"genExpandEvent":function(){
+	    var btn = document.querySelectorAll(".expand_button");
+	    var i;
+	    for(i=0; i<btn.length; i++){
+		btn[i].onclick = function(){
+		    var expand_url = TIEBA_KZ_URL+kz_global+TIEBA_PNUM+pn_global+TIEBA_EXPANED+this.dataset.floor;
+		    GET(expand_url, function(x){
+			var Item = x.responseXML.querySelector("div.i");
+			var item = Handle.tools.genPostData(Item);
+			var post = $("#post_" + item.floor);
+			var post_body = post.querySelector(".post_body");
+			post_body.innerHTML = item.content.innerHTML;
+		    });
+		}	
+	    }
+	},
+	"genSubPostButtonEvent":function(){
+	    var btn = document.querySelectorAll(".subpost_button");
+	    var i;
+	    for(i=0; i<btn.length; i++){
+		btn[i].onclick = function(){
+		    subPost(this.dataset.floor, 1);
+		}
+	    }
+	},
+	"genSubPostPagerEvent":function(pager_div){
+	    pager_div.querySelector(".pager_prev").onclick = function(){
+		var parent = this.parentElement;
+		subPost(parent.dataset.floor, Number(parent.dataset.pn)-1)
+	    }
+	    
+	    pager_div.querySelector(".pager_next").onclick = function(){
+		var parent = this.parentElement;
+		subPost(parent.dataset.floor, Number(parent.dataset.pn)+1)
+	    }
 	}
     },
     "bar":function(data){
@@ -274,7 +382,8 @@ var Render = {
 	    if(crt.good) item.classList.add("item_good");
 	    container.appendChild(item);
 	}, '');
-	this.tools.genPager(data.page, "bar");
+	pager.innerHTML = "";
+	pager.appendChild(this.tools.genPager(data.page, "bar"));
 	title(data.title);
     },
     "topic":function(data){
@@ -284,13 +393,46 @@ var Render = {
 	    var floor = post.querySelector(".post_floor");
 	    var author = post.querySelector(".post_author");
 	    var date = post.querySelector(".post_date");
+	    var body = post.querySelector(".post_body");
+	    var subpost = post.querySelector(".post_subpost");
 	    floor.textContent = "#" + crt.floor;
 	    author.textContent = crt.author;
 	    date.textContent = crt.date;
-	    post.appendChild(crt.content);
+	    body.innerHTML = crt.content.innerHTML;
+	    var subpost_button = document.createElement("button");
+	    subpost_button.textContent = "Reply("+crt.reply+")";
+	    subpost_button.dataset.floor = crt.floor;
+	    subpost_button.className = "subpost_button";
+	    if(!undef(crt.reply))
+		subpost.appendChild(subpost_button);
+	    post.id = "post_" + crt.floor;
 	    container.appendChild(post);
 	}, '');
-	this.tools.genPager(data.page, "topic");
+	pager.innerHTML = "";
+	pager.appendChild(this.tools.genPager(data.page, "topic"));
+	this.tools.genExpandEvent();
+	this.tools.genSubPostButtonEvent();
 	title(data.title);
+    },
+    "subPost":function(data){
+	var container = $("#post_"+data.floor).querySelector(".post_subpost");
+	container.innerHTML = "";
+	var list = document.createElement("ul");
+	list.classList.add("subpost_list");
+	data.reduce(function(prv, crt){
+	    var subpost = getNode("template_subpost").children[0];
+	    var header = subpost.querySelector(".subpost_header");
+	    var body = subpost.querySelector(".subpost_body");
+	    header.textContent = crt.author+":";
+	    header.title = crt.date;
+	    body.innerHTML = crt.content.innerHTML;
+	    list.appendChild(subpost);
+	}, '');
+	container.appendChild(list);
+	data.page.floor = data.floor;
+	var pager = this.tools.genPager(data.page, "subpost");
+	delete data.page.floor;
+	container.appendChild(pager);
+	this.tools.genSubPostPagerEvent(pager);
     }
 }
