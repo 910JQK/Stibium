@@ -10,6 +10,7 @@ class QTabWidget;
 class QHBoxLayout;
 class QLineEdit;
 class QPushButton;
+class QNetworkAccessManager;
 class View;
 
 
@@ -34,6 +35,7 @@ protected:
 	QPushButton *queryButton;
 private:
 	QApplication *application;
+	QNetworkAccessManager *NetworkAccessManager;
 };
 
 

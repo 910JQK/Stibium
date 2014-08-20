@@ -5,6 +5,8 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QNetworkAccessManager>
+#include <QNetworkCookieJar>
 #include <QDebug>
 #include "window.h"
 #include "view.h"
@@ -12,6 +14,9 @@
 
 Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	application = app;
+
+	NetworkAccessManager = new QNetworkAccessManager();
+	NetworkAccessManager -> setCookieJar(new QNetworkCookieJar());
 
 	Tabs = new QTabWidget(this);
 	Tabs -> setTabsClosable(true);
@@ -54,6 +59,7 @@ void Window::addTab(View *v){
 		this, SLOT(openTab(QString, QString)) );
 	connect(v, SIGNAL(titleChangeRequested(QString, View*)),
 		this, SLOT(changeTabTitle(QString, View*)) );
+	v -> page() -> setNetworkAccessManager(NetworkAccessManager);
 	v -> Load();
 	Tabs -> addTab(v, "New Tab");
 	views.append(v);
@@ -85,7 +91,11 @@ void Window::closeTab(int index){
 void Window::changeTabTitle(QString title, View *addr){
 	for(int i=0; i<Tabs->count(); i++){
 		if(Tabs->widget(i) == addr){
-			Tabs -> setTabText(i, title);
+			if(title.length() <= 8)
+				Tabs -> setTabText(i, title);
+			else
+				Tabs -> setTabText(i, title.left(8)+"...");
+			Tabs -> setTabToolTip(i, title);
 		}
 	}
 }

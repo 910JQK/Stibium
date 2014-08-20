@@ -1,3 +1,4 @@
+const TIEBA_LOGIN_URL = "http://wappass.baidu.com/passport/login";
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
@@ -79,6 +80,7 @@ function find(obj_arr, key, val){
 function init(){
     container = $("#list");
     pager = $("#pager");
+    login_div = $("#login");
 
     initial = bridge.getInitialData();
     if(!undef(initial.action) && !undef(initial.argument)){
@@ -93,6 +95,22 @@ function init(){
 }
 
 
+function parseObject(obj){
+    var result = "";
+    var i = 0;
+    for(I in obj){
+	if(obj.hasOwnProperty(I)){
+	    if(i != 0) 
+		result = result + "&" + I + "=" + obj[I];
+	    else
+		result = result + I + "=" + obj[I];
+	    i++;
+	}
+    }
+    return result;
+}
+
+
 function GET(url, reaction){
     var x = new XMLHttpRequest();
     x.open("GET", url, true);
@@ -101,6 +119,50 @@ function GET(url, reaction){
 	    reaction(x);
     };
     x.send();
+}
+
+
+function POST(url, data, reaction){
+    var x = new XMLHttpRequest();
+    x.open("POST", url, true);
+    x.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    x.onreadystatechange = function(){
+	if(x.readyState == 4 && x.status == 200)
+	    reaction(x);
+    };
+    x.send(parseObject(data));
+}
+
+
+function login(username, password, verifycode){
+    if(verifycode)
+	var data = {"username":username,"password":password,"verifycode":verifycode};
+    else
+	var data = {"username":username,"password":password};
+    POST(TIEBA_LOGIN_URL, data, function(x){
+	var parser = new DOMParser();
+	var doc = parser.parseFromString(x.responseText.trim(), "text/xml");
+	if(doc.querySelector("title").textContent.charCodeAt(0) == 30334){
+	    Render.login("succeeded")
+	}else if(doc.querySelector('[name="verifycode"]')){
+	    Render.login("verifycode", doc.querySelector('img[alt="wait..."]'));
+	}else{
+	    Render.login("failed", doc.querySelector("#error_area").children[0].textContent);
+	}
+    })
+}
+
+
+function do_login(){
+    function $$(selector){
+	return login_div.querySelector(selector);
+    }
+    var data = [];
+    data.push($$(".username").value);
+    data.push($$(".password").value);
+    if($$(".verifycode").type == "text")
+	data.push($$(".verifycode").value);
+    login.apply(window, data);
 }
 
 
@@ -255,7 +317,24 @@ var Handle = {
 	    var tl_txt = title_element.textContent;
 	    data.title = tl_txt.replace(/-[^-]*$/, "").replace(/^[^-]*-/, "");
 	}else{
-	    title = "";
+	    data.title = "";
+	}
+
+	var form = doc.querySelector("div.h > form");
+	data.submit = {};
+	if(!form.querySelector("a")){
+	    data.submit.valid = true;
+	    data.submit.data = {};
+	    var inputs = form.querySelectorAll('input[type="hidden"]');
+	    var i;
+	    for(i=0; i<inputs.length; i++){
+		var input = inputs[i];
+		var key = input.name;
+		var val = input.value;
+		data.submit.data[key] = val;
+	    }
+	}else{
+	    data.submit.valid = false;
 	}
 
 	return data;
@@ -442,5 +521,22 @@ var Render = {
 	delete data.page.floor;
 	container.appendChild(pager);
 	this.tools.genSubPostPagerEvent(pager);
+    },
+    "login":function(status, info){
+	if(status == "failed"){
+	    alert(info);
+	}else if(status == "succeeded"){
+	    alert("Login successfully!");
+	}else{
+	    var container = getNode("template_login").children[0];
+	    if(status == "verifycode"){
+		var img = info;
+		container.querySelector(".verifycode_img").appendChild(img);
+		container.querySelector(".verifycode").type="text";
+		alert("Please input verify code!")
+	    }
+	    login_div.innerHTML = "";
+	    login_div.appendChild(container);
+	}
     }
 }

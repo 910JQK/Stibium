@@ -1,5 +1,5 @@
 QT       += core gui
-QT       += webkit
+QT       += webkit network
 
 TARGET = Stibium
 TEMPLATE = app

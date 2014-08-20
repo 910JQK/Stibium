@@ -59,6 +59,9 @@ div.inline {
     margin-left: 0.2em;
     margin-right: 0.2em;
 }
+.post_subpost > .pager {
+    text-align: left;
+}
 </style>
 <template id="template_bar">
   <li class="item">
@@ -98,8 +101,19 @@ div.inline {
     <button class="pager_next">Next</button>
   </div>
 </template>
+<template id="template_login">
+  <div>
+    <input type="text" class="username"></input><br/>
+    <input type="password" class="password" maxlength="60"></input>
+    <div class="verifycode_img"></div>
+    <input type="hidden" class="verifycode" maxlength="4"></input><br/>
+    <button onclick="do_login()">Login</button>
+  </div>
+</template>
 </head>
 <body onload="init()">
+<div id="login">
+</div>
 <ul id="list">
 </ul>
 <div id="pager">
