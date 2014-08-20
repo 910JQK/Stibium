@@ -2,7 +2,7 @@ const TIEBA_LOGIN_URL = "http://wappass.baidu.com/passport/login";
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
-const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/submit";
+const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/m/submit";
 const TIEBA_EXPANED = "&global=1&expand=";
 const TIEBA_PNUM = "&pnum=";
 const TIEBA_PID = "&pid=";
@@ -77,27 +77,10 @@ function find(obj_arr, key, val){
 }
 
 
-function init(){
-    container = $("#list");
-    pager = $("#pager");
-    login_div = $("#login");
-
-    initial = bridge.getInitialData();
-    if(!undef(initial.action) && !undef(initial.argument)){
-	switch(initial.action){
-	    case "kw":
-	    bar(initial.argument, 1);
-	    break;
-	    case "kz":
-	    topic(initial.argument, 1);
-	}
-    }
-}
-
-
 function parseObject(obj){
     var result = "";
     var i = 0;
+    var I;
     for(I in obj){
 	if(obj.hasOwnProperty(I)){
 	    if(i != 0) 
@@ -106,6 +89,28 @@ function parseObject(obj){
 		result = result + I + "=" + obj[I];
 	    i++;
 	}
+    }
+    return result;
+}
+
+
+function copyObject(obj){
+    var result = {};
+    var I;
+    for(I in obj){
+	if(obj.hasOwnProperty(I)){
+	    result[I] = obj[I];
+	}
+    }
+    return result;
+}
+
+
+function fetchHashFromInput(collection){
+    var result = {};
+    var i;
+    for(i=0; i<collection.length; i++){
+	result[collection[i].name] = collection[i].value;
     }
     return result;
 }
@@ -163,6 +168,21 @@ function do_login(){
     if($$(".verifycode").type == "text")
 	data.push($$(".verifycode").value);
     login.apply(window, data);
+}
+
+
+function do_submit(){
+    function $$(selector){
+	return submit_div.querySelector(selector);
+    }
+    var data = copyObject(data_global.submit.data);
+    if(undef(data.ti))
+	data.ti = encodeURIComponent($$(".submit_title").value);
+    data.co = encodeURIComponent($$(".submit_content").value);
+    POST(TIEBA_SUBMIT_URL, data, function(x){
+	console.log(x);
+	/* Note: Refresh */
+    });
 }
 
 
@@ -274,6 +294,18 @@ var Handle = {
 	    /* Note: XSS Safety Settings Needed */
 
 	    return crt;
+	},
+	"genSubmitData":function(form){
+	    var result = {};
+	    if(!form.querySelector("a")){
+		result.valid = true;
+		result.data = {};
+		var inputs = form.querySelectorAll('input[type="hidden"]');
+		result.data = fetchHashFromInput(inputs);
+	    }else{
+		result.valid = false;
+	    }
+	    return result;
 	}
     },
     "bar":function(doc){
@@ -321,21 +353,7 @@ var Handle = {
 	}
 
 	var form = doc.querySelector("div.h > form");
-	data.submit = {};
-	if(!form.querySelector("a")){
-	    data.submit.valid = true;
-	    data.submit.data = {};
-	    var inputs = form.querySelectorAll('input[type="hidden"]');
-	    var i;
-	    for(i=0; i<inputs.length; i++){
-		var input = inputs[i];
-		var key = input.name;
-		var val = input.value;
-		data.submit.data[key] = val;
-	    }
-	}else{
-	    data.submit.valid = false;
-	}
+	data.submit = this.tools.genSubmitData(form);
 
 	return data;
     },
@@ -346,6 +364,9 @@ var Handle = {
 	for(i=0; i<items.length; i++){
 	    data.push(this.tools.genPostData(items[i]));
 	}
+
+	var form = doc.querySelector("div.h > form");
+	data.submit = this.tools.genSubmitData(form);
 
 	data.page = {};
 	var page_element = doc.querySelector("div.d > form > div.h");
@@ -371,6 +392,9 @@ var Handle = {
 	    crt.content = item;
 	    data.push(crt);
 	}
+
+	var form = doc.querySelector("div.h > form");
+	data.submit = this.tools.genSubmitData(form);
 	
 	data.page = {};
 	var page_element = doc.querySelector("form > div.h");
@@ -469,6 +493,12 @@ var Render = {
 	    if(crt.good) item.classList.add("item_good");
 	    container.appendChild(item);
 	}, '');
+	if(data.submit.valid){
+	    submit_div.style.display = "block";
+	    submit_div.querySelector(".submit_title").style.display = "";
+	}else{
+	    submit_div.style.display = "none";
+	}
 	pager.innerHTML = "";
 	pager.appendChild(this.tools.genPager(data.page, "bar"));
 	title(data.title);
@@ -495,6 +525,12 @@ var Render = {
 	    post.id = "post_" + crt.floor;
 	    container.appendChild(post);
 	}, '');
+	if(data.submit.valid){
+	    submit_div.style.display = "block";
+	    submit_div.querySelector(".submit_title").style.display = "none";
+	}else{
+	    submit_div.style.display = "none";
+	}
 	pager.innerHTML = "";
 	pager.appendChild(this.tools.genPager(data.page, "topic"));
 	this.tools.genExpandEvent();
@@ -537,6 +573,25 @@ var Render = {
 	    }
 	    login_div.innerHTML = "";
 	    login_div.appendChild(container);
+	}
+    }
+}
+
+
+function init(){
+    container = $("#list");
+    pager = $("#pager");
+    login_div = $("#login");
+    submit_div = $("#submit");
+
+    initial = bridge.getInitialData();
+    if(!undef(initial.action) && !undef(initial.argument)){
+	switch(initial.action){
+	    case "kw":
+	    bar(initial.argument, 1);
+	    break;
+	    case "kz":
+	    topic(initial.argument, 1);
 	}
     }
 }

@@ -62,6 +62,18 @@ div.inline {
 .post_subpost > .pager {
     text-align: left;
 }
+.item_top::before {
+    content: "#";
+    margin-right: 0.1em;
+}
+.item_good::after {
+    content: "[Good]";
+    color: #F33;
+    margin-left: 0.1em;
+}
+#submit {
+    display: none;
+}
 </style>
 <template id="template_bar">
   <li class="item">
@@ -116,6 +128,11 @@ div.inline {
 </div>
 <ul id="list">
 </ul>
+<div id="submit">
+  <input type="text" class="submit_title" maxlength="60"></input>
+  <textarea class="submit_content" maxlength="5000"></textarea>
+  <button onclick="do_submit()">Submit</button>
+</div>
 <div id="pager">
 </div>
 </body>
