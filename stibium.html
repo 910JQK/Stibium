@@ -71,6 +71,16 @@ div.inline {
     color: #F33;
     margin-left: 0.1em;
 }
+.msg_header {
+    font-weight: bold;
+}
+.msg_item {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+#list {
+    word-wrap: break-word;
+}
 #submit {
     display: none;
 }
@@ -105,6 +115,13 @@ div.inline {
     <span class="subpost_header"></span>
     <span class="subpost_body"></span>
   </li>
+</template>
+<template id="template_subpost_submit">
+  <div class="subpost_submit">
+    <input type="text" class="subpost_submit_input" maxlength="280"></input>
+    <button>Submit</button>
+    <span class="subpost_submit_tip"></span>
+  </div>
 </template>
 <template id="template_pager">
   <div class="pager">

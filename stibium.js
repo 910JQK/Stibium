@@ -3,10 +3,13 @@ const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/m/submit";
+const TIEBA_REPLYME_URL = "http://tieba.baidu.com/mo/m/replyme";
+const TIEBA_ATME_URL = "http://tieba.baidu.com/mo/m/atme";
 const TIEBA_EXPANED = "&global=1&expand=";
 const TIEBA_PNUM = "&pnum=";
 const TIEBA_PID = "&pid=";
 var container, initial, doc_global, data_global, kw_global, kz_global, pn_global;
+var doc_reply_global, doc_at_global;
 
 
 function $(selector){
@@ -74,6 +77,13 @@ function find(obj_arr, key, val){
 	}
     }
     return {};
+}
+
+
+function size(str){
+    /* Baidu uses GBK so hantzi is two-bytes character */
+    var w_chars = str.match(/[^\x00-\xff]/g);
+    return (str.length + ((!w_chars)? 0: w_chars.length));
 }
 
 
@@ -180,8 +190,7 @@ function do_submit(){
 	data.ti = encodeURIComponent($$(".submit_title").value);
     data.co = encodeURIComponent($$(".submit_content").value);
     POST(TIEBA_SUBMIT_URL, data, function(x){
-	console.log(x);
-	/* Note: Refresh */
+	init();
     });
 }
 
@@ -194,6 +203,7 @@ function bar(bar, pn){
 	doc_global = x.responseXML;
 	data_global = Handle.bar(x.responseXML);
 	Render.bar(data_global);
+	scroll(0, 0);
     });
     title("Loading");
 }
@@ -207,6 +217,7 @@ function topic(kz, pn){
 	doc_global = x.responseXML;
 	data_global = Handle.topic(x.responseXML);
 	Render.topic(data_global);
+	scroll(0, 0);
     });
     title("Loading");
 }
@@ -218,6 +229,17 @@ function subPost(floor, pn){
     GET(URL, function(x){
 	Render.subPost(Handle.subPost(x.responseXML, floor));
     })
+}
+
+
+function msg(){
+    GET(TIEBA_REPLYME_URL, function(x1){
+	doc_reply_global = x1.responseXML;
+	GET(TIEBA_ATME_URL, function(x2){
+	    doc_at_global = x2.responseXML;
+	    Render.msg(Handle.msg(doc_reply_global, doc_at_global));
+	});
+    });
 }
 
 
@@ -386,7 +408,9 @@ var Handle = {
 	    function remove(){
 		return item.removeChild(item.children[item.children.length-1]);
 	    }
-	    remove();
+	    var tmp = remove().textContent;
+	    if(tmp.charCodeAt(0) == 21024 && tmp.length == 1)
+		remove();
 	    crt.date = remove().textContent;
 	    crt.author = remove().textContent;
 	    crt.content = item;
@@ -402,6 +426,30 @@ var Handle = {
 	
 	data.floor = floor;
 	
+	return data;
+    },
+    "msg":function(doc_reply, doc_at){
+	var data = {};
+	var items_reply = doc_reply.querySelectorAll("div.ct > div");
+	var items_at = doc_at.querySelectorAll("div.ct > div");
+	function handle(div){
+	    var a = div.querySelectorAll("a");
+	    var i;
+	    for(i=0; i<a.length; i++){
+		if(a[i].href.match(/^http:\/\/[^\/]*\/mo\/[^\/]*\/m\?kz=\d+.*/)){
+		    var txt = a[i].href;
+		    txt = txt.replace(/^.*m\?kz=/, "tieba://kz#");
+		    txt = txt.replace(/&.*/, "");
+		    a[i].href = txt;
+		}
+	    }
+	}
+	var i;
+	for(i=0; i<items_reply.length; i++) handle(items_reply[i]);
+	for(i=0; i<items_at.length; i++) handle(items_at[i]);
+	data.reply = items_reply;
+	data.at = items_at;
+	console.log(data);
 	return data;
     }
 }
@@ -464,6 +512,31 @@ var Render = {
 		}
 	    }
 	},
+	"genSubPostSubmitEvent":function(submit_div){
+	    var btn = submit_div.querySelector("button");
+	    var input = submit_div.querySelector("input");
+	    btn.onclick = function(){
+		var parent = this.parentElement;
+		var data = JSON.parse(parent.dataset.data);
+		var floor = parent.dataset.floor;
+		var pn = parent.parentElement.querySelector(".pager").dataset.pn;
+		var co = parent.querySelector("input");
+		data.co = encodeURIComponent(co.value);
+		data.ti = encodeURIComponent(data.ti);
+		POST(TIEBA_SUBMIT_URL, data, function(x){
+		    subPost(floor, pn);
+		});
+	    }
+	    input.onkeyup = function(){
+		var tip = this.parentElement.querySelector("span");
+		if(size(this.value) > 280)
+		    tip.textContent = "Over 280 bytes!";
+		else if(this.value.length > 140)
+		    tip.textContent = "Over 140 characters!";
+		else
+		    tip.textContent = "";
+	    }
+	},
 	"genSubPostPagerEvent":function(pager_div){
 	    pager_div.querySelector(".pager_prev").onclick = function(){
 		var parent = this.parentElement;
@@ -486,7 +559,7 @@ var Render = {
 	    var date = item.querySelector(".item_date");
 	    count.textContent = crt.reply.count;
 	    link.textContent = crt.title;
-	    link.href = "action://kz#" + crt.kz;
+	    link.href = "tieba://kz#" + crt.kz;
 	    last.textContent = crt.reply.last;
 	    date.textContent = crt.reply.date;
 	    if(crt.top) item.classList.add("item_top");
@@ -552,10 +625,17 @@ var Render = {
 	    list.appendChild(subpost);
 	}, '');
 	container.appendChild(list);
+	if(data.submit.valid){
+	    var submit = getNode("template_subpost_submit").children[0];
+	    submit.dataset.data = JSON.stringify(data.submit.data);
+	    submit.dataset.floor = data.floor;
+	    container.appendChild(submit);
+	}
 	data.page.floor = data.floor;
 	var pager = this.tools.genPager(data.page, "subpost");
 	delete data.page.floor;
 	container.appendChild(pager);
+	this.tools.genSubPostSubmitEvent(submit);
 	this.tools.genSubPostPagerEvent(pager);
     },
     "login":function(status, info){
@@ -573,7 +653,36 @@ var Render = {
 	    }
 	    login_div.innerHTML = "";
 	    login_div.appendChild(container);
+	    title("Login");
 	}
+    },
+    "msg":function(data){
+	container.innerHTML = "";
+	function create(){
+	    return document.createElement("li");
+	}
+	var header_reply = create();
+	header_reply.textContent = "Reply:";
+	header_reply.className = "msg_header";
+	var header_at = create();
+	header_at.textContent = "At:";
+	header_at.className = "msg_header";
+	container.appendChild(header_reply);
+	var i;
+	for(i=0; i<data.reply.length; i++){
+	    var item = create();
+	    item.innerHTML = data.reply[i].innerHTML;
+	    item.className = "msg_item";
+	    container.appendChild(item);
+	}
+	container.appendChild(header_at);
+	for(i=0; i<data.at.length; i++){
+	    var item = create();
+	    item.innerHTML = data.at[i].innerHTML;
+	    item.className = "msg_item";
+	    container.appendChild(item);
+	}
+	title("Messages");
     }
 }
 
@@ -592,6 +701,12 @@ function init(){
 	    break;
 	    case "kz":
 	    topic(initial.argument, 1);
+	    break;
+	    case "login":
+	    Render.login();
+	    break;
+	    case "msg":
+	    msg();
 	}
     }
 }

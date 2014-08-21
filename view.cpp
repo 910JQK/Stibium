@@ -51,7 +51,7 @@ void View::javaScriptWindowObjectCleared(){
 
 
 void View::LinkClicked(const QUrl &url){
-	if(url.scheme() == "action"){
+	if(url.scheme() == "tieba"){
 		if( (url.authority() == "kw" || url.authority() == "kz")
 		    && url.hasFragment() ){
 			emit openTab(url.authority(), url.fragment());
