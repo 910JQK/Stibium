@@ -21,6 +21,10 @@ ul {
 div.inline {
     display: inline-block;
 }
+.action_link {
+    color: #2D64B3;
+    cursor: pointer;
+}
 .item, .post {
     padding-top: 1em;
     padding-bottom: 1em;
@@ -74,9 +78,19 @@ div.inline {
 .msg_header {
     font-weight: bold;
 }
-.msg_item {
+.msg_item, .fav_item {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
+}
+.submit_content {
+    width: 100%;
+    height: 6em;
+}
+#header > a {
+    margin-right: 0.2em;
+}
+#login {
+    margin-top: 0.5em;
 }
 #list {
     word-wrap: break-word;
@@ -132,8 +146,8 @@ div.inline {
 </template>
 <template id="template_login">
   <div>
-    <input type="text" class="username"></input><br/>
-    <input type="password" class="password" maxlength="60"></input>
+    <input type="text" class="username" placeholder="Username"></input><br/>
+    <input type="password" class="password" placeholder="Password" maxlength="60"></input>
     <div class="verifycode_img"></div>
     <input type="hidden" class="verifycode" maxlength="4"></input><br/>
     <button onclick="do_login()">Login</button>
@@ -141,16 +155,21 @@ div.inline {
 </template>
 </head>
 <body onload="init()">
-<div id="login">
+<div id="header">
+  <a id="login_link"></a>
+  <a id="msg_link" style="display:none;" href="tieba://msg">Messages</a>
+  <span style="float:right">
+    <input type="text" id="query" placeholder="Enter a bar"></input>
+    <!-- <a class="action_link" onclick="query()">Go</a> -->
+  </span>
 </div>
-<ul id="list">
-</ul>
+<div id="login"></div>
+<ul id="list"></ul>
 <div id="submit">
-  <input type="text" class="submit_title" maxlength="60"></input>
+  <input type="text" class="submit_title" placeholder="Title" maxlength="60"></input><br/>
   <textarea class="submit_content" maxlength="5000"></textarea>
   <button onclick="do_submit()">Submit</button>
 </div>
-<div id="pager">
-</div>
+<div id="pager"></div>
 </body>
 </html>

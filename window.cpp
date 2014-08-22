@@ -1,10 +1,9 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QTabWidget>
-#include <QWidget>
-#include <QHBoxLayout>
-#include <QLineEdit>
 #include <QPushButton>
+#include <QAction>
+#include <QKeySequence>
 #include <QNetworkAccessManager>
 #include <QNetworkCookieJar>
 #include <QDebug>
@@ -22,6 +21,7 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	Tabs -> setTabsClosable(true);
 	Tabs -> setMovable(true);
 
+/*
 	corner = new QWidget(Tabs);
 	queryEdit = new QLineEdit(corner);
 	queryEdit -> setPlaceholderText("Query");
@@ -31,6 +31,15 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	queryLayout -> addWidget(queryButton);
 	corner -> setLayout(queryLayout);
 	Tabs -> setCornerWidget(corner);
+*/
+	newTabButton = new QPushButton("+", this);
+	Tabs -> setCornerWidget(newTabButton);
+
+	/* Not work now */
+	QKeySequence ks("Crtl+W");
+	closeAction = new QAction(this);
+	closeAction -> setShortcut(ks);
+	addAction(closeAction);
 
 	setCentralWidget(Tabs);
 	openTab();
@@ -40,12 +49,18 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	QDesktopWidget *desktop = QApplication::desktop();
 	move((desktop->width() - this->width())/2, (desktop->height() - this->height())/2);
 
+	connect(closeAction, SIGNAL(triggered()),
+		this, SLOT(closeTab()) );
 	connect(Tabs, SIGNAL(tabCloseRequested(int)),
 		this, SLOT(closeTab(int)) );
+	connect(newTabButton, SIGNAL(clicked()),
+		this, SLOT(openTab()) );
+/*
 	connect(queryEdit, SIGNAL(returnPressed()),
 		this, SLOT(query()) );
 	connect(queryButton, SIGNAL(clicked()),
 		this, SLOT(query()) );
+*/
 }
 
 
@@ -68,9 +83,7 @@ void Window::addTab(View *v){
 
 
 void Window::openTab(){
-	View *v;
-	v = new View(this);
-	addTab(v);
+	openTab("index", "");
 }
 
 
@@ -78,6 +91,11 @@ void Window::openTab(QString action, QString argument){
 	View *v;
 	v = new View(this, action, argument);
 	addTab(v);
+}
+
+
+void Window::closeTab(){
+	closeTab(Tabs->currentIndex());
 }
 
 
@@ -101,6 +119,8 @@ void Window::changeTabTitle(QString title, View *addr){
 }
 
 
+/*
 void Window::query(){
 	openTab("kw", queryEdit->text());
 }
+*/

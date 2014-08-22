@@ -7,8 +7,6 @@
 class QApplication;
 class QWidget;
 class QTabWidget;
-class QHBoxLayout;
-class QLineEdit;
 class QPushButton;
 class QNetworkAccessManager;
 class View;
@@ -23,16 +21,14 @@ public slots:
 	void addTab(View *v);
 	void openTab();
 	void openTab(QString action, QString argument);
+	void closeTab();
 	void closeTab(int index);
 	void changeTabTitle(QString title, View *addr);
-	void query();
 protected:
+	QAction *closeAction;
 	QTabWidget *Tabs;
 	QList<View*> views;
-	QWidget *corner;
-	QHBoxLayout *queryLayout;
-	QLineEdit *queryEdit;
-	QPushButton *queryButton;
+	QPushButton *newTabButton;
 private:
 	QApplication *application;
 	QNetworkAccessManager *NetworkAccessManager;

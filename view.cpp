@@ -37,6 +37,8 @@ void View::init(){
 		this, SLOT(javaScriptWindowObjectCleared()) );
 	connect(bridge, SIGNAL(changeTitle(QString)),
 		this, SLOT(changeTitle(QString)) );
+	connect(bridge, SIGNAL(openTab(QString, QString)),
+		this, SIGNAL(openTab(QString, QString)) );
 }
 
 
@@ -52,10 +54,7 @@ void View::javaScriptWindowObjectCleared(){
 
 void View::LinkClicked(const QUrl &url){
 	if(url.scheme() == "tieba"){
-		if( (url.authority() == "kw" || url.authority() == "kz")
-		    && url.hasFragment() ){
-			emit openTab(url.authority(), url.fragment());
-		}
+		emit openTab(url.authority(), url.fragment());
 	}
 }
 
@@ -77,6 +76,12 @@ Bridge::~Bridge(){
 
 void Bridge::debug(QString msg){
 	qDebug() << msg;
+}
+
+
+void Bridge::setInitialData(QString action, QString argument){
+	initial_data["action"] = action;
+	initial_data["argument"] = argument;
 }
 
 

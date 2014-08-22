@@ -1,3 +1,4 @@
+/* Stibium Javascript Core */
 const TIEBA_LOGIN_URL = "http://wappass.baidu.com/passport/login";
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
@@ -5,11 +6,14 @@ const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/m/submit";
 const TIEBA_REPLYME_URL = "http://tieba.baidu.com/mo/m/replyme";
 const TIEBA_ATME_URL = "http://tieba.baidu.com/mo/m/atme";
+//const TIEBA_FAV_URL = "http://tieba.baidu.com/mo/m?tn=bdFBW&tab=favorite";
+const TIEBA_INDEX_URL = "http://wapp.baidu.com/";
 const TIEBA_EXPANED = "&global=1&expand=";
 const TIEBA_PNUM = "&pnum=";
 const TIEBA_PID = "&pid=";
-var container, initial, doc_global, data_global, kw_global, kz_global, pn_global;
+var initial, doc_global, data_global, kw_global, kz_global, pn_global;
 var doc_reply_global, doc_at_global;
+var container, login_div, login_link, msg_link, submit_div, pager;
 
 
 function $(selector){
@@ -126,6 +130,27 @@ function fetchHashFromInput(collection){
 }
 
 
+function Empty(){
+    login_div.innerHTML = "";
+    container.innerHTML = "";
+    pager.innerHTML = "";
+    submit_div.display = "";
+}
+
+
+function setNick(nick){
+    if(!nick){
+	login_link.href = "tieba://login";
+	login_link.textContent = "Login";
+	msg_link.style.display = "none";
+    }else{
+	login_link.href = "";
+	login_link.textContent = nick;
+	msg_link.style.display = "";
+    }
+}
+
+
 function GET(url, reaction){
     var x = new XMLHttpRequest();
     x.open("GET", url, true);
@@ -149,6 +174,14 @@ function POST(url, data, reaction){
 }
 
 
+function index(){
+    GET(TIEBA_INDEX_URL, function(x){
+	Render.index(Handle.index(x.responseXML));
+    });
+    title("Loading");
+}
+
+
 function login(username, password, verifycode){
     if(verifycode)
 	var data = {"username":username,"password":password,"verifycode":verifycode};
@@ -164,7 +197,7 @@ function login(username, password, verifycode){
 	}else{
 	    Render.login("failed", doc.querySelector("#error_area").children[0].textContent);
 	}
-    })
+    });
 }
 
 
@@ -201,7 +234,7 @@ function bar(bar, pn){
     pn_global = pn;
     GET(URL, function(x){
 	doc_global = x.responseXML;
-	data_global = Handle.bar(x.responseXML);
+	data_global = Handle.bar(x.responseXML, bar);
 	Render.bar(data_global);
 	scroll(0, 0);
     });
@@ -215,7 +248,7 @@ function topic(kz, pn){
     pn_global = pn;
     GET(URL, function(x){
 	doc_global = x.responseXML;
-	data_global = Handle.topic(x.responseXML);
+	data_global = Handle.topic(x.responseXML, kz);
 	Render.topic(data_global);
 	scroll(0, 0);
     });
@@ -240,6 +273,12 @@ function msg(){
 	    Render.msg(Handle.msg(doc_reply_global, doc_at_global));
 	});
     });
+    title("Loading");
+}
+
+
+function query(){
+    bridge.openTab("kw", $("#query").value);
 }
 
 
@@ -272,6 +311,10 @@ var Handle = {
 		    crt.reply = 0;
 		}
 	    }
+
+	    var first_floor_reply = item.querySelector('[href="#reply"]');
+	    if(first_floor_reply)
+		item.removeChild(first_floor_reply);
 
 	    var table = item.querySelector("table");
 
@@ -330,7 +373,7 @@ var Handle = {
 	    return result;
 	}
     },
-    "bar":function(doc){
+    "bar":function(doc, kw){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i, j;
@@ -377,9 +420,14 @@ var Handle = {
 	var form = doc.querySelector("div.h > form");
 	data.submit = this.tools.genSubmitData(form);
 
+	var nick = doc.querySelectorAll("body > div > div.bc.p");
+	if(nick.length == 3)
+	    data.nick = nick[2].textContent.replace(/\s.*/, "");
+
+	data.kw = kw;
 	return data;
     },
-    "topic":function(doc){
+    "topic":function(doc, kz){
 	var data = [];
 	var items = doc.querySelectorAll("div.i");
 	var i;
@@ -396,6 +444,11 @@ var Handle = {
 
 	data.title = doc.querySelector("title").textContent;
 
+	var nick = doc.querySelectorAll("body > div > div.d.h");
+	if(nick.length == 2)
+	    data.nick = nick[1].textContent.replace(/\s.*/, "");
+
+	data.kz = kz;
 	return data;
     },
     "subPost":function(doc, floor){
@@ -450,6 +503,25 @@ var Handle = {
 	data.reply = items_reply;
 	data.at = items_at;
 	console.log(data);
+	return data;
+    },
+    "index":function(doc){
+	var data = {};
+	var like = doc.querySelector(".my_love_bar");
+	if(like){
+	    data.valid = true;
+	    var nick = doc.querySelectorAll("div.b > a")[1].textContent;
+	    data.nick = nick.slice(0, nick.length-4);
+	    var a = like.querySelectorAll("a");
+	    like.removeChild(a[a.length-1]);
+	    data.like = [];
+	    var i;
+	    for(i=0; i<a.length; i++){
+		data.like.push(a[i].textContent);
+	    }
+	}else{
+	    data.valid = false;
+	}
 	return data;
     }
 }
@@ -550,7 +622,7 @@ var Render = {
 	}
     },
     "bar":function(data){
-	container.innerHTML = "";
+	Empty();
 	data.reduce(function(prv, crt){
 	    var item = getNode("template_bar").children[0];
 	    var count = item.querySelector(".item_count");
@@ -569,15 +641,17 @@ var Render = {
 	if(data.submit.valid){
 	    submit_div.style.display = "block";
 	    submit_div.querySelector(".submit_title").style.display = "";
+	    setNick(data.nick);
 	}else{
 	    submit_div.style.display = "none";
+	    setNick(false);
 	}
-	pager.innerHTML = "";
 	pager.appendChild(this.tools.genPager(data.page, "bar"));
 	title(data.title);
+	bridge.setInitialData("kw", data.kw);
     },
     "topic":function(data){
-	container.innerHTML = "";
+	Empty();
 	data.reduce(function(prv, crt){
 	    var post = getNode("template_topic").children[0];
 	    var floor = post.querySelector(".post_floor");
@@ -589,26 +663,29 @@ var Render = {
 	    author.textContent = crt.author;
 	    date.textContent = crt.date;
 	    body.innerHTML = crt.content.innerHTML;
-	    var subpost_button = document.createElement("button");
-	    subpost_button.textContent = "Reply("+crt.reply+")";
-	    subpost_button.dataset.floor = crt.floor;
-	    subpost_button.className = "subpost_button";
-	    if(!undef(crt.reply))
+	    if(!undef(crt.reply) && crt.floor != 1){
+		var subpost_button = document.createElement("button");
+		subpost_button.textContent = "Reply("+crt.reply+")";
+		subpost_button.dataset.floor = crt.floor;
+		subpost_button.className = "subpost_button";
 		subpost.appendChild(subpost_button);
+	    }
 	    post.id = "post_" + crt.floor;
 	    container.appendChild(post);
 	}, '');
 	if(data.submit.valid){
 	    submit_div.style.display = "block";
 	    submit_div.querySelector(".submit_title").style.display = "none";
+	    setNick(data.nick);
 	}else{
 	    submit_div.style.display = "none";
+	    setNick(false);
 	}
-	pager.innerHTML = "";
 	pager.appendChild(this.tools.genPager(data.page, "topic"));
 	this.tools.genExpandEvent();
 	this.tools.genSubPostButtonEvent();
 	title(data.title);
+	bridge.setInitialData("kz", data.kz);
     },
     "subPost":function(data){
 	var container = $("#post_"+data.floor).querySelector(".post_subpost");
@@ -635,13 +712,16 @@ var Render = {
 	var pager = this.tools.genPager(data.page, "subpost");
 	delete data.page.floor;
 	container.appendChild(pager);
-	this.tools.genSubPostSubmitEvent(submit);
+	if(data.submit.valid)
+	    this.tools.genSubPostSubmitEvent(submit);
 	this.tools.genSubPostPagerEvent(pager);
     },
     "login":function(status, info){
+	Empty();
 	if(status == "failed"){
 	    alert(info);
 	}else if(status == "succeeded"){
+	    index();
 	    alert("Login successfully!");
 	}else{
 	    var container = getNode("template_login").children[0];
@@ -651,13 +731,14 @@ var Render = {
 		container.querySelector(".verifycode").type="text";
 		alert("Please input verify code!")
 	    }
-	    login_div.innerHTML = "";
 	    login_div.appendChild(container);
 	    title("Login");
+	    setNick(false);
+	    bridge.setInitialData("login", "");
 	}
     },
     "msg":function(data){
-	container.innerHTML = "";
+	Empty();
 	function create(){
 	    return document.createElement("li");
 	}
@@ -683,6 +764,29 @@ var Render = {
 	    container.appendChild(item);
 	}
 	title("Messages");
+	bridge.setInitialData("msg", "");
+    },
+    "index":function(data){
+	Empty();
+	if(data.valid){
+	    data.like.reduce(function(prv, crt){
+		var li = document.createElement("li");
+		li.className = "fav_item";
+		var a =document.createElement("a");
+		a.textContent = crt;
+		a.href = "tieba://kw#" + encodeURIComponent(crt);
+		li.appendChild(a);
+		container.appendChild(li);
+	    });
+	    setNick(data.nick);
+	}else{
+	    var li = document.createElement("li");
+	    li.textContent = "Not logged in";
+	    container.appendChild(li);
+	    setNick(false);
+	}
+	bridge.setInitialData("index", "");
+	title("Home");
     }
 }
 
@@ -691,11 +795,22 @@ function init(){
     container = $("#list");
     pager = $("#pager");
     login_div = $("#login");
+    login_link = $("#login_link");
+    msg_link = $("#msg_link");
     submit_div = $("#submit");
 
+    $("#query").onkeyup = function(ev){
+	if(ev.keyCode == 13){
+	    query();
+	}
+    }
+
     initial = bridge.getInitialData();
-    if(!undef(initial.action) && !undef(initial.argument)){
+    if(initial.action){
 	switch(initial.action){
+	    case "index":
+	    index();
+	    break;
 	    case "kw":
 	    bar(initial.argument, 1);
 	    break;

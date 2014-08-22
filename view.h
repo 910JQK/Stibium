@@ -37,8 +37,10 @@ public:
 	QVariantMap initial_data;
 signals:
 	void changeTitle(QString title);
+	void openTab(QString action, QString argument);
 public slots:
 	void debug(QString msg);
+	void setInitialData(QString action, QString argument);
 	QVariantMap getInitialData();
 };
 
