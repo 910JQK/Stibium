@@ -6,6 +6,7 @@
 #include <QKeySequence>
 #include <QNetworkAccessManager>
 #include <QNetworkCookieJar>
+#include <QDir>
 #include <QDebug>
 #include "window.h"
 #include "view.h"
@@ -13,6 +14,7 @@
 
 Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	application = app;
+	QDir::setCurrent(QApplication::applicationDirPath());
 
 	NetworkAccessManager = new QNetworkAccessManager();
 	NetworkAccessManager -> setCookieJar(new QNetworkCookieJar());
@@ -39,6 +41,7 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	QKeySequence ks("Crtl+W");
 	closeAction = new QAction(this);
 	closeAction -> setShortcut(ks);
+	closeAction -> setShortcutContext(Qt::ApplicationShortcut);
 	addAction(closeAction);
 
 	setCentralWidget(Tabs);

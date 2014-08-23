@@ -1,5 +1,6 @@
 /* Stibium Javascript Core */
 const TIEBA_LOGIN_URL = "http://wappass.baidu.com/passport/login";
+const TIEBA_LOGOUT_URL = "http://wappass.baidu.com/passport/?logout";
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
@@ -14,6 +15,7 @@ const TIEBA_PID = "&pid=";
 var initial, doc_global, data_global, kw_global, kz_global, pn_global;
 var doc_reply_global, doc_at_global;
 var container, login_div, login_link, msg_link, submit_div, pager;
+var logged = false;
 
 
 function $(selector){
@@ -130,6 +132,31 @@ function fetchHashFromInput(collection){
 }
 
 
+function clear_xss_threat(node){
+    function remove(selector){
+	var rm = node.querySelectorAll(selector);
+	if(rm){
+	    var i;
+	    for(i=0; i<rm.length; i++){
+		rm[i].parentElement.removeChild(rm[i]);
+	    }
+	}
+    }
+    remove("script");
+/*
+    GET request:
+    remove("style");
+    remove("link");
+    remove("audio");
+    remove("video");
+    remove("embed");
+    remove("object");
+    remove("iframe");
+    remove(" img with some rule ")
+*/
+}
+
+
 function Empty(){
     login_div.innerHTML = "";
     container.innerHTML = "";
@@ -140,14 +167,24 @@ function Empty(){
 
 function setNick(nick){
     if(!nick){
-	login_link.href = "tieba://login";
+	logged = false;
 	login_link.textContent = "Login";
+	login_link.title = "";
 	msg_link.style.display = "none";
     }else{
-	login_link.href = "";
+	logged = true;
 	login_link.textContent = nick;
+	login_link.title = "Click to logout";
 	msg_link.style.display = "";
     }
+}
+
+
+function login_link_clicked(){
+    if(!logged)
+	Render.login();
+    else
+	logout();
 }
 
 
@@ -214,14 +251,23 @@ function do_login(){
 }
 
 
+function logout(){
+    GET(TIEBA_LOGOUT_URL, function(x){
+	index();
+    });
+}
+
+
 function do_submit(){
     function $$(selector){
 	return submit_div.querySelector(selector);
     }
+    var ti = $$(".submit_title").value;
+    var co = $$(".submit_content").value;
     var data = copyObject(data_global.submit.data);
     if(undef(data.ti))
-	data.ti = encodeURIComponent($$(".submit_title").value);
-    data.co = encodeURIComponent($$(".submit_content").value);
+	    data.ti = encodeURIComponent(ti);
+    data.co = encodeURIComponent(co);
     POST(TIEBA_SUBMIT_URL, data, function(x){
 	init();
     });
@@ -342,6 +388,10 @@ var Handle = {
 			item.appendChild(expand_button);
 		    }
 		    item.removeChild(a[j]);
+		}else if(a[j].href.match(/^http:\/\/gate\.baidu\.com/)){
+		    var txt = a[j].href.replace(/^.*&src=/, "");
+		    txt = decodeURIComponent(txt);
+		    a[j].href = txt;
 		}
 	    }
 
@@ -355,6 +405,7 @@ var Handle = {
 
 	    item.innerHTML = item.innerHTML.replace(/^[\d]*.\.\s/, "");
 	    item.className = "post_body";
+	    clear_xss_threat(item);
 	    crt.content = item;
 	    /* Note: XSS Safety Settings Needed */
 
@@ -466,6 +517,15 @@ var Handle = {
 		remove();
 	    crt.date = remove().textContent;
 	    crt.author = remove().textContent;
+	    var a = item.querySelectorAll("a");
+	    var j;
+	    for(j=0; j<a.length; j++){
+		if(a[j].href.match(/^http:\/\/gate\.baidu\.com/)){
+		    var txt = a[j].href.replace(/^.*&src=/, "");
+		    txt = decodeURIComponent(txt);
+		    a[j].href = txt;
+		}
+	    }
 	    crt.content = item;
 	    data.push(crt);
 	}
@@ -513,11 +573,12 @@ var Handle = {
 	    var nick = doc.querySelectorAll("div.b > a")[1].textContent;
 	    data.nick = nick.slice(0, nick.length-4);
 	    var a = like.querySelectorAll("a");
-	    like.removeChild(a[a.length-1]);
+//	    like.removeChild(a[a.length-1]);
 	    data.like = [];
 	    var i;
 	    for(i=0; i<a.length; i++){
-		data.like.push(a[i].textContent);
+		if(!a[i].href.match(/tab=favorite$/))
+		    data.like.push(a[i].textContent);
 	    }
 	}else{
 	    data.valid = false;
