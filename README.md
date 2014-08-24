@@ -11,8 +11,8 @@
 
 ## 編譯及運行
 
--依賴(粗放拆包發行版)：qt4
--依賴(精細拆包發行版)：libqt4-core libqt4-gui libqt4-webkit libqt4-network
+- 依賴(粗放拆包發行版)：qt4
+- 依賴(精細拆包發行版)：libqt4-core libqt4-gui libqt4-webkit libqt4-network
 
 <pre>
 $ git clone https://github.com/910JQK/Stibium
