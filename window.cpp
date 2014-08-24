@@ -68,7 +68,7 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 
 
 Window::~Window(){
-	qDebug() << "Window destructed";
+//	qDebug() << "Window destructed";
 }
 
 

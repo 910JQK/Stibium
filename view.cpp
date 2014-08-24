@@ -19,7 +19,7 @@ View::View(QWidget *parent, QString action, QString argument):QWebView(parent) {
 
 View::~View(){
 	delete bridge;
-	qDebug() << "View destructed";
+//	qDebug() << "View destructed";
 }
 
 
