@@ -16,6 +16,7 @@
 
 <pre>
 $ git clone https://github.com/910JQK/Stibium
+$ cd Stibium
 $ qmake    #arch:qmake-qt4
 $ make
 $ ./Stibium
