@@ -26,11 +26,11 @@ $ ./Stibium
 
 開啓程式後程式會請求<code>wapp.baidu.com</code>，確認收到應答後會顯示 Login 鏈接，即可登入。登入後再點擊該鏈接 (內容已變成 ID) 即可登出。不登錄也可以從右上角的輸入框輸入吧名，回車。注意加號請換成「%2B」，這樣才能正常進入，例如「C++」=>「C%2B%2B」，而且可能不能發貼，這是百度的一個 BUG。貼子列表右端為最後回覆者而不是發貼者。右鍵 Reload 刷新，Inspect 查看元素可以打開 Inspector 來 Debug, 可以用來看程式有沒有出錯以及網路狀況。在有些版本的 Qt 中關閉打開了 Inspector 的標籤可能會吐核。
 
-<img src="screenshot1.png"/>
-<img src="screenshot2.png"/>
-<img src="screenshot3.png"/>
-<img src="screenshot4.png"/>
-<img src="screenshot5.png"/>
+<img src="screenshot/screenshot1.png"/>
+<img src="screenshot/screenshot2.png"/>
+<img src="screenshot/screenshot3.png"/>
+<img src="screenshot/screenshot4.png"/>
+<img src="screenshot/screenshot5.png"/>
 
 ## 成果
 
