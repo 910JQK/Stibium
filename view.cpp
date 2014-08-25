@@ -32,6 +32,7 @@ void View::init(){
 	defaultSettings->setObjectCacheCapacities(0, 0, 0);
 	page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
 	bridge = new Bridge();
+	bridge -> counter_ptr = NULL;
 	connect(this, SIGNAL(linkClicked(const QUrl &)),
 		this, SLOT(LinkClicked(const QUrl &)) );
 	connect(page()->mainFrame(), SIGNAL(javaScriptWindowObjectCleared()),
@@ -77,6 +78,19 @@ Bridge::~Bridge(){
 
 void Bridge::debug(QString msg){
 	qDebug() << msg;
+}
+
+
+void Bridge::setCounter(unsigned int val){
+	*counter_ptr = val;
+}
+
+
+unsigned int Bridge::getCounter(){
+	if(counter_ptr != NULL)
+		return *counter_ptr;
+	else
+		return 0;
 }
 
 

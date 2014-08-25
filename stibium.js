@@ -126,7 +126,7 @@ function fetchHashFromInput(collection){
     var result = {};
     var i;
     for(i=0; i<collection.length; i++){
-	result[collection[i].name] = collection[i].value;
+	result[collection[i].name] = encodeURIComponent(collection[i].value);
     }
     return result;
 }
@@ -188,10 +188,55 @@ function login_link_clicked(){
 }
 
 
+function readyStateText(status){
+    var result = "";
+    switch(status){
+	case 0:
+	result = "Uninitialized";
+	break;
+	case 1:
+	result = "Initialized";
+	break;
+	case 2:
+	result = "Connecting...";
+	break;
+	case 3:
+	result = "Receiving...";
+	break;
+	case 4:
+	result = "DONE";
+	break;
+    }
+    return result;
+}
+
+
+function Debug(count, content){
+    var header = "[" + count + "] ";
+    var body = content.join(" ");
+    bridge.debug(header + body);
+    console.log(header + body);
+}
+
+
+function debug_status(count, xmlhttp){
+    var txt = readyStateText(xmlhttp.readyState);
+    if(xmlhttp.statusText)
+	Debug(count, [txt, xmlhttp.statusText]);
+    else
+	Debug(count, [txt]);
+}
+
+
 function GET(url, reaction){
+    var counter = bridge.counter + 1;
+    bridge.counter++;
+    Debug(counter, ["GET", url]);
+
     var x = new XMLHttpRequest();
     x.open("GET", url, true);
     x.onreadystatechange = function(){
+	debug_status(counter, x);
 	if(x.readyState == 4 && x.status == 200)
 	    reaction(x);
     };
@@ -200,14 +245,22 @@ function GET(url, reaction){
 
 
 function POST(url, data, reaction){
+    var data_str = parseObject(data);
+
+    var counter = bridge.counter + 1;
+    bridge.counter++;
+    Debug(counter, ["POST", url]);
+    Debug(counter, ["DATA", data_str.replace(/&password=[^&]+/, "&['MASKED']")]);
+
     var x = new XMLHttpRequest();
     x.open("POST", url, true);
     x.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     x.onreadystatechange = function(){
+	debug_status(counter, x);
 	if(x.readyState == 4 && x.status == 200)
 	    reaction(x);
     };
-    x.send(parseObject(data));
+    x.send(data_str);
 }
 
 
@@ -266,7 +319,7 @@ function do_submit(){
     var co = $$(".submit_content").value;
     var data = copyObject(data_global.submit.data);
     if(undef(data.ti))
-	    data.ti = encodeURIComponent(ti);
+	data.ti = encodeURIComponent(ti);
     data.co = encodeURIComponent(co);
     POST(TIEBA_SUBMIT_URL, data, function(x){
 	init();

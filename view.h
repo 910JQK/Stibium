@@ -31,10 +31,14 @@ protected:
 
 class Bridge : public QObject {
 	Q_OBJECT
+	Q_PROPERTY(unsigned int counter READ getCounter WRITE setCounter);
 public:
 	Bridge();
 	~Bridge();
+	unsigned int *counter_ptr;
 	QVariantMap initial_data;
+	unsigned int getCounter();
+	void setCounter(unsigned int val);
 signals:
 	void changeTitle(QString title);
 	void openTab(QString action, QString argument);

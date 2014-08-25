@@ -30,6 +30,7 @@ protected:
 	QList<View*> views;
 	QPushButton *newTabButton;
 private:
+	unsigned int *counter;
 	QApplication *application;
 	QNetworkAccessManager *NetworkAccessManager;
 };

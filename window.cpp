@@ -16,6 +16,8 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	application = app;
 	QDir::setCurrent(QApplication::applicationDirPath());
 
+	counter = new unsigned int(0);
+
 	NetworkAccessManager = new QNetworkAccessManager();
 	NetworkAccessManager -> setCookieJar(new QNetworkCookieJar());
 
@@ -77,6 +79,7 @@ void Window::addTab(View *v){
 		this, SLOT(openTab(QString, QString)) );
 	connect(v, SIGNAL(titleChangeRequested(QString, View*)),
 		this, SLOT(changeTabTitle(QString, View*)) );
+	v -> bridge -> counter_ptr = counter;
 	v -> page() -> setNetworkAccessManager(NetworkAccessManager);
 	v -> Load();
 	Tabs -> addTab(v, "New Tab");
