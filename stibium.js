@@ -1,12 +1,13 @@
 /* Stibium Javascript Core */
+const MAGIC_STR = "q-foobar-1-1-0-wapp"
 const TIEBA_LOGIN_URL = "http://wappass.baidu.com/passport/login";
 const TIEBA_LOGOUT_URL = "http://wappass.baidu.com/passport/?logout";
 const TIEBA_KW_URL = "http://tieba.baidu.com/mo/m?kw=";
 const TIEBA_KZ_URL = "http://tieba.baidu.com/mo/m?kz=";
 const TIEBA_FL_URL = "http://tieba.baidu.com/mo/m/flr?kz=";
 const TIEBA_SUBMIT_URL = "http://tieba.baidu.com/mo/m/submit";
-const TIEBA_REPLYME_URL = "http://tieba.baidu.com/mo/m/replyme";
-const TIEBA_ATME_URL = "http://tieba.baidu.com/mo/m/atme";
+const TIEBA_REPLYME_URL = "http://tieba.baidu.com/mo/" + MAGIC_STR + "/replyme";
+const TIEBA_ATME_URL = "http://tieba.baidu.com/mo/" + MAGIC_STR + "/atme";
 //const TIEBA_FAV_URL = "http://tieba.baidu.com/mo/m?tn=bdFBW&tab=favorite";
 const TIEBA_INDEX_URL = "http://wapp.baidu.com/";
 const TIEBA_EXPANED = "&global=1&expand=";
