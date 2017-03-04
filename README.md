@@ -40,8 +40,8 @@ $ ./Stibium
 - 帖子：(GET) http://tieba.baidu.com/mo/m 必須參數<code>kz</code>為帖子號碼。可以添加<code>&global=1&expand=樓層</code>來展開被分段的長樓層
 - 樓中樓：(GET) http://tieba.baidu.com/mo/m/flr 必須參數<code>kz</code>和樓層的<code>pid</code>(POST ID)，可以從帖子中樓層的回覆鏈接中找到
 - 以上三項均有可選參數<code>pnum</code>(Page number)，條目元素<code>div.i</code>
-- 回覆我的：(GET) http://tieba.baidu.com/mo/m/replyme
-- Ａｔ我的：(GET) http://tieba.baidu.com/mo/m/atme
+- 回覆我的：(GET) http://tieba.baidu.com/mo/q-foobar-1-1-0-wapp/replyme
+- Ａｔ我的：(GET) http://tieba.baidu.com/mo/q-foobar-1-1-0-wapp/atme
 - 喜歡的吧：(GET) http://tieba.baidu.com/mo/m?tn=bdFBW&tab=favorite
 - 發表帖子/回覆：(POST) http://tieba.baidu.com/mo/m/submit 已知參數<code>co</code>(Content) 為帖子內容，<code>ti</code>(Title) 為帖子標題。在頁面的回覆出有對應的<code>input[type="hidden"]</code>，含有相應的定位參數
 - 來自 m.tiebaimg.com 的圖片可以指定參數<code>quality</code>(最大值似乎是100) 和<code>size</code>格式是<code>b寬_高</code>
