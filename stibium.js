@@ -281,12 +281,16 @@ function login(username, password, verifycode){
     POST(TIEBA_LOGIN_URL, data, function(x){
 	var parser = new DOMParser();
 	var doc = parser.parseFromString(x.responseText.trim(), "text/xml");
-	if(doc.querySelector("title").textContent.charCodeAt(0) == 30334){
+	console.log(doc)
+	if(
+	    !doc.querySelector("title") ||
+	    doc.querySelector("title").textContent.charCodeAt(0) == 30334
+	){
 	    Render.login("succeeded")
 	}else if(doc.querySelector('[name="verifycode"]')){
 	    Render.login("verifycode", doc.querySelector('img[alt="wait..."]'));
 	}else{
-	    Render.login("failed", doc.querySelector("#error_area").children[0].textContent);
+	    Render.login("failed", doc.querySelector("#error_area") && doc.querySelector("#error_area").children[0].textContent);
 	}
     });
 }
@@ -452,8 +456,16 @@ var Handle = {
 	    var img = item.querySelectorAll(".BDE_Image");
 	    for(j=0; j<img.length; j++){
 		var src = img[j].src;
-		src = src.replace(/quality=\d+/, "quality=100");
-		src = src.replace(/size=b\d+_\d+/, "size=b2000_2000");
+		if(src.match('c.hiphotos.baidu.com')) {
+		    var match_real_url = src.match('src=(.*)');
+		    if(match_real_url) {
+			var real_url = match_real_url[1];
+			src = decodeURIComponent(real_url);
+		    }
+		} else {
+		    src = src.replace(/quality=\d+/, "quality=100");
+		    src = src.replace(/size=b\d+_\d+/, "size=b2000_2000");
+		}
 		img[j].src = src;
 	    }
 
@@ -514,12 +526,14 @@ var Handle = {
 	var page_element = doc.querySelector("div.p");
 	data.page = this.tools.genPageData(page_element);
 	
-	var title_element = doc.querySelector("title");
+	var title_element = doc.querySelector(".bc");
 	if(title_element){
 	    var tl_txt = title_element.textContent;
-	    data.title = tl_txt.replace(/-[^-]*$/, "").replace(/^[^-]*-/, "");
+	    var pos = tl_txt.search(String.fromCharCode(0xA0));
+	    data.title = tl_txt.slice(0, pos);
+	    // data.title = tl_txt.replace(/-[^-]*$/, "").replace(/^[^-]*-/, "");
 	}else{
-	    data.title = "";
+	    data.title = "???";
 	}
 
 	var form = doc.querySelector("div.h > form");
@@ -547,7 +561,7 @@ var Handle = {
 	var page_element = doc.querySelector("div.d > form > div.h");
 	data.page = this.tools.genPageData(page_element);
 
-	data.title = doc.querySelector("title").textContent;
+	data.title = doc.querySelector("strong").textContent;
 
 	var nick = doc.querySelectorAll("body > div > div.d.h");
 	if(nick.length == 2)
@@ -834,7 +848,7 @@ var Render = {
     "login":function(status, info){
 	Empty();
 	if(status == "failed"){
-	    alert(info);
+	    alert("Login Failed: " + info);
 	}else if(status == "succeeded"){
 	    index();
 	    alert("Login successfully!");
