@@ -32,7 +32,7 @@ $ ./Stibium
 <img src="screenshot/screenshot4.png"/>
 <img src="screenshot/screenshot5.png"/>
 
-## 成果
+## 研究成果
 
 - 登入百度：向 http://wappass.baidu.com/passport/login 發送 POST 請求，必須參數為<code>username</code><code>password</code>，還可能有<code>verifycode</code>
 - 登出：(GET) http://wappass.baidu.com/passport/?logout
@@ -44,8 +44,9 @@ $ ./Stibium
 - Ａｔ我的：(GET) http://tieba.baidu.com/mo/q-foobar-1-1-0-wapp/atme
 - 喜歡的吧：(GET) http://tieba.baidu.com/mo/m?tn=bdFBW&tab=favorite
 - 發表帖子/回覆：(POST) http://tieba.baidu.com/mo/m/submit 已知參數<code>co</code>(Content) 為帖子內容，<code>ti</code>(Title) 為帖子標題。在頁面的回覆出有對應的<code>input[type="hidden"]</code>，含有相應的定位參數
-- 來自 m.tiebaimg.com 的圖片可以指定參數<code>quality</code>(最大值似乎是100) 和<code>size</code>格式是<code>b寬_高</code>
+- <del>來自 m.tiebaimg.com 的圖片可以指定參數<code>quality</code>(最大值似乎是100) 和<code>size</code>格式是<code>b寬_高</code></del>
+- 來自 c.hiphotos.baidu.com 的圖片無法調整參數，可通過 <code>decodeURIComponent(img.src.match('src=(.*)')[1])</code> 獲取圖片原本的 URL (imgsrc.baidu.com)
 
 # LICENSE
 
-Licensed under MIT license, no warranty.
+Licensed under MIT license, with absolutely no warranty.
