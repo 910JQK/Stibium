@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=0.01
+Encoding=UTF-8
+Name=Baidu Tieba
+Name[zh_TW]=百度貼吧
+Name[zh_CN]=百度贴吧
+Exec=stibium
+Icon=tieba
+Categories=Application;Network

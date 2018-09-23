@@ -49,7 +49,8 @@ Window::Window(QApplication *app, QWidget *parent) : QMainWindow(parent) {
 	setCentralWidget(Tabs);
 	openTab();
 
-	setWindowTitle(tr("Stibium"));
+	setWindowIcon(QIcon("tieba.png"));
+	setWindowTitle(tr("Baidu Tieba"));
 	resize(800, 600);
 	QDesktopWidget *desktop = QApplication::desktop();
 	move((desktop->width() - this->width())/2, (desktop->height() - this->height())/2);
